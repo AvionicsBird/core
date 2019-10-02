@@ -8,11 +8,11 @@
  * file that was distributed with this source code.
  */
 
-namespace Longman\TelegramBot\Tests\Unit\Commands;
+namespace Longman\Tests\Unit\Telegram\Commands;
 
 use Longman\TelegramBot\Commands\Command;
 use Longman\TelegramBot\Telegram;
-use Longman\TelegramBot\Tests\Unit\TestCase;
+use Tests\Telegram\TestCase;
 
 /**
  * @package         TelegramTest
@@ -36,7 +36,7 @@ class CommandTestCase extends TestCase
     /**
      * setUp
      */
-    public function setUp()
+    public function setUp():void
     {
         $this->telegram = new Telegram(self::$dummy_api_key, 'testbot');
 

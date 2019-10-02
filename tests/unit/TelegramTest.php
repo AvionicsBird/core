@@ -8,8 +8,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Longman\TelegramBot\Tests\Unit;
+namespace Longman\Tests\Unit\Telegram;
 
+use DMS\PHPUnitExtensions\ArraySubset\ArraySubsetAsserts;
 use Longman\TelegramBot\Telegram;
 
 /**
@@ -21,6 +22,7 @@ use Longman\TelegramBot\Telegram;
  */
 class TelegramTest extends TestCase
 {
+    use ArraySubsetAsserts;
     /**
      * @var Telegram
      */
@@ -35,7 +37,7 @@ class TelegramTest extends TestCase
         '/tmp/php-telegram-bot-custom-commands-3',
     ];
 
-    protected function setUp()
+    protected function setUp():void
     {
         $this->telegram = new Telegram(self::$dummy_api_key, 'testbot');
 
@@ -45,7 +47,7 @@ class TelegramTest extends TestCase
         }
     }
 
-    protected function tearDown()
+    protected function tearDown():void
     {
         // Clean up the custom commands paths.
         foreach ($this->custom_commands_paths as $custom_path) {
@@ -54,8 +56,8 @@ class TelegramTest extends TestCase
     }
 
     /**
-     * @expectedException \Longman\TelegramBot\Exception\TelegramException
-     * @expectedExceptionMessage API KEY not defined!
+     * @expectException \Longman\TelegramBot\Exception\TelegramException
+     * @expectExceptionMessage API KEY not defined!
      */
     public function testNewInstanceWithoutApiKeyParam()
     {
@@ -63,8 +65,8 @@ class TelegramTest extends TestCase
     }
 
     /**
-     * @expectedException \Longman\TelegramBot\Exception\TelegramException
-     * @expectedExceptionMessage Invalid API KEY defined!
+     * @expectException \Longman\TelegramBot\Exception\TelegramException
+     * @expectExceptionMessage Invalid API KEY defined!
      */
     public function testNewInstanceWithInvalidApiKeyParam()
     {
@@ -141,7 +143,7 @@ class TelegramTest extends TestCase
     public function testGetCommandsList()
     {
         $commands = $this->telegram->getCommandsList();
-        $this->assertInternalType('array', $commands);
+        $this->assertIsArray($commands);
         $this->assertNotCount(0, $commands);
     }
 }

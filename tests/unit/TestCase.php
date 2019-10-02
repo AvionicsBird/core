@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Longman\TelegramBot\Tests\Unit;
+namespace Longman\Tests\Unit\Telegram;
 
 class TestCase extends \PHPUnit\Framework\TestCase
 {
@@ -24,5 +24,29 @@ class TestCase extends \PHPUnit\Framework\TestCase
                 'Skipping test that can run only on a 64-bit build of PHP.'
             );
         }
+    }
+
+    public function assertAttributeE($value, $attribute, $class) {
+        // First Check if the attribute exists
+        $this->assertObjectHasAttribute($attribute, $class);
+        $rval = $this->_ReflectValue($class, $attribute);
+        $this->assertEquals($value, $rval);
+    }
+
+    /**
+     * Return value of a private property using ReflectionClass
+     *
+     * @param Mixed $instance
+     * @param string $property
+     *
+     * @return mixed
+     */
+    protected function _ReflectValue($instance, $property = '_data')
+    {
+        $reflector = new \ReflectionClass($instance);
+        $reflector_property = $reflector->getProperty($property);
+        $reflector_property->setAccessible(true);
+
+        return $reflector_property->getValue($instance);
     }
 }

@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Longman\TelegramBot\Tests\Unit;
+namespace Longman\Tests\Unit\Telegram;
 
 use Longman\TelegramBot\Entities\Audio;
 
@@ -26,7 +26,7 @@ class AudioTest extends TestCase
      */
     private $record;
 
-    public function setUp()
+    public function setUp():void
     {
         $this->record = TestHelpers::getFakeRecordedAudio();
     }

@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Longman\TelegramBot\Tests\Unit;
+namespace Longman\Tests\Unit\Telegram;
 
 use Longman\TelegramBot\DB;
 use Longman\TelegramBot\Entities\Chat;

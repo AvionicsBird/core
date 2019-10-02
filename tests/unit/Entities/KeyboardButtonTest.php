@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Longman\TelegramBot\Tests\Unit;
+namespace Longman\Tests\Unit\Telegram;
 
 use Longman\TelegramBot\Entities\KeyboardButton;
 
@@ -22,8 +22,8 @@ use Longman\TelegramBot\Entities\KeyboardButton;
 class KeyboardButtonTest extends TestCase
 {
     /**
-     * @expectedException \Longman\TelegramBot\Exception\TelegramException
-     * @expectedExceptionMessage You must add some text to the button!
+     * @expectException \Longman\TelegramBot\Exception\TelegramException
+     * @expectExceptionMessage You must add some text to the button!
      */
     public function testKeyboardButtonNoTextFail()
     {
@@ -31,8 +31,8 @@ class KeyboardButtonTest extends TestCase
     }
 
     /**
-     * @expectedException \Longman\TelegramBot\Exception\TelegramException
-     * @expectedExceptionMessage You must use only one of these fields: request_contact, request_location!
+     * @expectException \Longman\TelegramBot\Exception\TelegramException
+     * @expectExceptionMessage You must use only one of these fields: request_contact, request_location!
      */
     public function testKeyboardButtonTooManyParametersFail()
     {

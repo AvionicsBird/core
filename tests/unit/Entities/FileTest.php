@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Longman\TelegramBot\Tests\Unit;
+namespace Longman\Tests\Unit\Telegram;
 
 use Longman\TelegramBot\Entities\File;
 
@@ -26,7 +26,7 @@ class FileTest extends TestCase
      */
     private $data;
 
-    public function setUp()
+    public function setUp():void
     {
         $this->data = [
             'file_id'   => (int) mt_rand(1, 99),
@@ -45,7 +45,7 @@ class FileTest extends TestCase
     {
         $file = new File($this->data);
         $id   = $file->getFileId();
-        $this->assertInternalType('int', $id);
+        $this->assertIsInt( $id);
         $this->assertEquals($this->data['file_id'], $id);
     }
 
@@ -53,7 +53,7 @@ class FileTest extends TestCase
     {
         $file = new File($this->data);
         $size = $file->getFileSize();
-        $this->assertInternalType('int', $size);
+        $this->assertIsInt( $size);
         $this->assertEquals($this->data['file_size'], $size);
     }
 

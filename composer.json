@@ -38,7 +38,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Longman\\TelegramBot\\": "src/"
+            "Longman\\TelegramBot\\": "src/",
+            "Longman\\Tests\\" :  "tests/unit"
         }
     },
     "autoload-dev": {

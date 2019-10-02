@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Longman\TelegramBot\Tests\Unit;
+namespace Longman\Tests\Unit\Telegram;
 
 use Longman\TelegramBot\Conversation;
 use Longman\TelegramBot\Telegram;
@@ -27,7 +27,7 @@ class ConversationTest extends TestCase
      */
     private $telegram;
 
-    protected function setUp()
+    protected function setUp():void
     {
         $credentials = [
             'host'     => PHPUNIT_DB_HOST,
@@ -46,18 +46,18 @@ class ConversationTest extends TestCase
     public function testConversationThatDoesntExistPropertiesSetCorrectly()
     {
         $conversation = new Conversation(123, 456);
-        $this->assertAttributeEquals(123, 'user_id', $conversation);
-        $this->assertAttributeEquals(456, 'chat_id', $conversation);
-        $this->assertAttributeEquals(null, 'command', $conversation);
+        $this->assertAttributeE(123, 'user_id', $conversation);
+        $this->assertAttributeE(456, 'chat_id', $conversation);
+        $this->assertAttributeE(null, 'command', $conversation);
     }
 
     public function testConversationThatExistsPropertiesSetCorrectly()
     {
         $info         = TestHelpers::startFakeConversation();
         $conversation = new Conversation($info['user_id'], $info['chat_id'], 'command');
-        $this->assertAttributeEquals($info['user_id'], 'user_id', $conversation);
-        $this->assertAttributeEquals($info['chat_id'], 'chat_id', $conversation);
-        $this->assertAttributeEquals('command', 'command', $conversation);
+        $this->assertAttributeE($info['user_id'], 'user_id', $conversation);
+        $this->assertAttributeE($info['chat_id'], 'chat_id', $conversation);
+        $this->assertAttributeE('command', 'command', $conversation);
     }
 
     public function testConversationThatDoesntExistWithoutCommand()
@@ -68,7 +68,7 @@ class ConversationTest extends TestCase
     }
 
     /**
-     * @expectedException \Longman\TelegramBot\Exception\TelegramException
+     * @expectException \Longman\TelegramBot\Exception\TelegramException
      */
     public function testConversationThatDoesntExistWithCommand()
     {

@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Longman\TelegramBot\Tests\Unit;
+namespace Longman\Tests\Unit\Telegram;
 
 use Longman\TelegramBot\Entities\Keyboard;
 use Longman\TelegramBot\Entities\KeyboardButton;
@@ -23,8 +23,8 @@ use Longman\TelegramBot\Entities\KeyboardButton;
 class KeyboardTest extends TestCase
 {
     /**
-     * @expectedException \Longman\TelegramBot\Exception\TelegramException
-     * @expectedExceptionMessage keyboard field is not an array!
+     * @expectException \Longman\TelegramBot\Exception\TelegramException
+     * @expectExceptionMessage keyboard field is not an array!
      */
     public function testKeyboardDataMalformedField()
     {
@@ -32,8 +32,8 @@ class KeyboardTest extends TestCase
     }
 
     /**
-     * @expectedException \Longman\TelegramBot\Exception\TelegramException
-     * @expectedExceptionMessage keyboard subfield is not an array!
+     * @expectException \Longman\TelegramBot\Exception\TelegramException
+     * @expectExceptionMessage keyboard subfield is not an array!
      */
     public function testKeyboardDataMalformedSubfield()
     {

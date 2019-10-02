@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Longman\TelegramBot\Tests\Unit;
+namespace Longman\Tests\Unit\Telegram;
 
 use Longman\TelegramBot\Entities\Games\CallbackGame;
 use Longman\TelegramBot\Entities\InlineKeyboardButton;
@@ -23,8 +23,8 @@ use Longman\TelegramBot\Entities\InlineKeyboardButton;
 class InlineKeyboardButtonTest extends TestCase
 {
     /**
-     * @expectedException \Longman\TelegramBot\Exception\TelegramException
-     * @expectedExceptionMessage You must add some text to the button!
+     * @expectException \Longman\TelegramBot\Exception\TelegramException
+     * @expectExceptionMessage You must add some text to the button!
      */
     public function testInlineKeyboardButtonNoTextFail()
     {
@@ -32,8 +32,8 @@ class InlineKeyboardButtonTest extends TestCase
     }
 
     /**
-     * @expectedException \Longman\TelegramBot\Exception\TelegramException
-     * @expectedExceptionMessage You must use only one of these fields: url, login_url, callback_data, switch_inline_query, switch_inline_query_current_chat, callback_game, pay!
+     * @expectException \Longman\TelegramBot\Exception\TelegramException
+     * @expectExceptionMessage You must use only one of these fields: url, login_url, callback_data, switch_inline_query, switch_inline_query_current_chat, callback_game, pay!
      */
     public function testInlineKeyboardButtonNoParameterFail()
     {
@@ -41,8 +41,8 @@ class InlineKeyboardButtonTest extends TestCase
     }
 
     /**
-     * @expectedException \Longman\TelegramBot\Exception\TelegramException
-     * @expectedExceptionMessage You must use only one of these fields: url, login_url, callback_data, switch_inline_query, switch_inline_query_current_chat, callback_game, pay!
+     * @expectException \Longman\TelegramBot\Exception\TelegramException
+     * @expectExceptionMessage You must use only one of these fields: url, login_url, callback_data, switch_inline_query, switch_inline_query_current_chat, callback_game, pay!
      */
     public function testInlineKeyboardButtonTooManyParametersFail()
     {

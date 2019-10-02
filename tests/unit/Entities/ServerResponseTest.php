@@ -10,7 +10,7 @@
  * Written by Marco Boretto
  */
 
-namespace Longman\TelegramBot\Tests\Unit;
+namespace Longman\Tests\Unit\Telegram;
 
 use Longman\TelegramBot\Entities\File;
 use Longman\TelegramBot\Entities\Message;
@@ -31,7 +31,7 @@ use Longman\TelegramBot\Request;
  */
 class ServerResponseTest extends TestCase
 {
-    protected function setUp()
+    protected function setUp():void
     {
         // Make sure the current action in the Request class is unset.
         TestHelpers::setStaticProperty(Request::class, 'current_action', null);
