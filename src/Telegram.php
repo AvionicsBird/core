@@ -18,6 +18,7 @@ use Longman\TelegramBot\Commands\Command;
 use Longman\TelegramBot\Entities\ServerResponse;
 use Longman\TelegramBot\Entities\Update;
 use Longman\TelegramBot\Exception\TelegramException;
+use Longman\TelegramBot\Models\Update;
 use PDO;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -89,20 +90,6 @@ class Telegram
     protected $download_path;
 
     /**
-     * MySQL integration
-     *
-     * @var boolean
-     */
-    protected $mysql_enabled = false;
-
-    /**
-     * PDO object
-     *
-     * @var PDO
-     */
-    protected $pdo;
-
-    /**
      * Commands config
      *
      * @var array
@@ -129,13 +116,6 @@ class Telegram
      * @var boolean
      */
     protected $run_commands = false;
-
-    /**
-     * Is running getUpdates without DB enabled
-     *
-     * @var bool
-     */
-    protected $getupdates_without_database = false;
 
     /**
      * Last update ID
@@ -175,7 +155,7 @@ class Telegram
         Request::initialize($this);
     }
 
-    /**
+    /**`
      * Initialize Database connection
      *
      * @param array  $credential
@@ -205,14 +185,20 @@ class Telegram
      */
     public function enableExternalMySql($external_pdo_connection, $table_prefix = null)
     {
+        // This isn't really needed anymore as we're switching to eloquent
+        /*
         $this->pdo = DB::externalInitialize($external_pdo_connection, $this, $table_prefix);
         ConversationDB::initializeConversation();
         $this->mysql_enabled = true;
-
+        */
         return $this;
     }
 
     /**
+     * Commands Can be loaded two ways
+     * 1) Load All Commands in Vendor Commands Directory & the specified in config
+     * 2) By class list inside config which defines specific commands only to load
+     *
      * Get commands list
      *
      * @return array $commands
@@ -328,27 +314,17 @@ class Telegram
             throw new TelegramException('Bot Username is not defined!');
         }
 
-        if (!DB::isDbConnected() && !$this->getupdates_without_database) {
-            return new ServerResponse(
-                [
-                    'ok'          => false,
-                    'description' => 'getUpdates needs MySQL connection! (This can be overridden - see documentation)',
-                ],
-                $this->bot_username
-            );
-        }
-
         $offset = 0;
 
         //Take custom input into account.
         if ($custom_input = $this->getCustomInput()) {
             $response = new ServerResponse(json_decode($custom_input, true), $this->bot_username);
         } else {
-            if (DB::isDbConnected() && $last_update = DB::selectTelegramUpdate(1)) {
-                //Get last update id from the database
-                $last_update = reset($last_update);
+            $last_update = Update::lastUpdate();
 
-                $this->last_update_id = isset($last_update['id']) ? $last_update['id'] : null;
+
+            if($last_update) {
+                $this->last_update_id = $last_update->id;
             }
 
             if ($this->last_update_id !== null) {
@@ -373,16 +349,6 @@ class Telegram
                 $this->processUpdate($result);
             }
 
-            if (!DB::isDbConnected() && !$custom_input && $this->last_update_id !== null && $offset === 0) {
-                //Mark update(s) as read after handling
-                Request::getUpdates(
-                    [
-                        'offset'  => $this->last_update_id + 1,
-                        'limit'   => 1,
-                        'timeout' => $timeout,
-                    ]
-                );
-            }
         }
 
         return $response;
@@ -411,6 +377,7 @@ class Telegram
         if (empty($post)) {
             throw new TelegramException('Invalid JSON!');
         }
+
 
         if ($response = $this->processUpdate(new Update($post, $this->bot_username))) {
             return $response->isOk();
@@ -478,8 +445,10 @@ class Telegram
         }
 
         //Make sure we don't try to process update that was already processed
-        $last_id = DB::selectTelegramUpdate(1, $this->update->getUpdateId());
-        if ($last_id && count($last_id) === 1) {
+      //  $last_id = DB::selectTelegramUpdate(1, $this->update->getUpdateId());
+        $last_update = Update::where('id', $this->update->getUpdateId())->get()->first();
+
+        if ($last_update) {
             TelegramLog::debug('Duplicate update received, processing aborted!');
             return Request::emptyResponse();
         }
@@ -607,20 +576,6 @@ class Telegram
         }
 
         return ($user_id === null) ? false : in_array($user_id, $this->admins_list, true);
-    }
-
-    /**
-     * Check if user required the db connection
-     *
-     * @return bool
-     */
-    public function isDbEnabled()
-    {
-        if ($this->mysql_enabled) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     /**

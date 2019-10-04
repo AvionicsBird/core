@@ -10,6 +10,7 @@
  */
 
 namespace Longman\TelegramBot;
+use Illuminate\Support\Facades\DB as LaravelDB;
 
 use Longman\TelegramBot\Entities\CallbackQuery;
 use Longman\TelegramBot\Entities\Chat;
@@ -23,6 +24,8 @@ use Longman\TelegramBot\Entities\ReplyToMessage;
 use Longman\TelegramBot\Entities\Update;
 use Longman\TelegramBot\Entities\User;
 use Longman\TelegramBot\Exception\TelegramException;
+use Longman\TelegramBot\Models\TelegramChat;
+use Longman\TelegramBot\Models\Update;
 use PDO;
 use PDOException;
 
@@ -73,91 +76,10 @@ class DB
         $table_prefix = null,
         $encoding = 'utf8mb4'
     ) {
-        if (empty($credentials)) {
-            throw new TelegramException('MySQL credentials not provided!');
-        }
+        // really nothing to initialize anymore
 
-        $dsn = 'mysql:host=' . $credentials['host'] . ';dbname=' . $credentials['database'];
-        if (!empty($credentials['port'])) {
-            $dsn .= ';port=' . $credentials['port'];
-        }
-
-        $options = [PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES ' . $encoding];
-        try {
-            $pdo = new PDO($dsn, $credentials['user'], $credentials['password'], $options);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
-        } catch (PDOException $e) {
-            throw new TelegramException($e->getMessage());
-        }
-
-        self::$pdo               = $pdo;
-        self::$telegram          = $telegram;
-        self::$mysql_credentials = $credentials;
-        self::$table_prefix      = $table_prefix;
-
-        self::defineTables();
-
-        return self::$pdo;
     }
 
-    /**
-     * External Initialize
-     *
-     * Let you use the class with an external already existing Pdo Mysql connection.
-     *
-     * @param PDO      $external_pdo_connection PDO database object
-     * @param Telegram $telegram                Telegram object to connect with this object
-     * @param string   $table_prefix            Table prefix
-     *
-     * @return PDO PDO database object
-     * @throws TelegramException
-     */
-    public static function externalInitialize(
-        $external_pdo_connection,
-        Telegram $telegram,
-        $table_prefix = null
-    ) {
-        if ($external_pdo_connection === null) {
-            throw new TelegramException('MySQL external connection not provided!');
-        }
-
-        self::$pdo               = $external_pdo_connection;
-        self::$telegram          = $telegram;
-        self::$mysql_credentials = [];
-        self::$table_prefix      = $table_prefix;
-
-        self::defineTables();
-
-        return self::$pdo;
-    }
-
-    /**
-     * Define all the tables with the proper prefix
-     */
-    protected static function defineTables()
-    {
-        $tables = [
-            'callback_query',
-            'chat',
-            'chosen_inline_result',
-            'edited_message',
-            'inline_query',
-            'message',
-            'pre_checkout_query',
-            'poll',
-            'request_limiter',
-            'shipping_query',
-            'telegram_update',
-            'user',
-            'user_chat',
-        ];
-        foreach ($tables as $table) {
-            $table_name = 'TB_' . strtoupper($table);
-            if (!defined($table_name)) {
-                define($table_name, self::$table_prefix . $table);
-            }
-        }
-    }
 
     /**
      * Check if database connection has been created
@@ -166,18 +88,9 @@ class DB
      */
     public static function isDbConnected()
     {
-        return self::$pdo !== null;
+        return LaravelDB::connection() != null;
     }
 
-    /**
-     * Get the PDO object of the connected database
-     *
-     * @return PDO
-     */
-    public static function getPdo()
-    {
-        return self::$pdo;
-    }
 
     /**
      * Fetch update(s) from DB
@@ -193,6 +106,7 @@ class DB
         if (!self::isDbConnected()) {
             return false;
         }
+
 
         try {
             $sql = '
@@ -339,32 +253,21 @@ class DB
             throw new TelegramException('message_id, edited_message_id, channel_post_id, edited_channel_post_id, inline_query_id, chosen_inline_result_id, callback_query_id, shipping_query_id, pre_checkout_query_id, poll_id are all null');
         }
 
-        if (!self::isDbConnected()) {
-            return false;
-        }
 
         try {
-            $sth = self::$pdo->prepare('
-                INSERT IGNORE INTO `' . TB_TELEGRAM_UPDATE . '`
-                (`id`, `chat_id`, `message_id`, `edited_message_id`, `channel_post_id`, `edited_channel_post_id`, `inline_query_id`, `chosen_inline_result_id`, `callback_query_id`, `shipping_query_id`, `pre_checkout_query_id`, `poll_id`)
-                VALUES
-                (:id, :chat_id, :message_id, :edited_message_id, :channel_post_id, :edited_channel_post_id, :inline_query_id, :chosen_inline_result_id, :callback_query_id, :shipping_query_id, :pre_checkout_query_id, :poll_id)
-            ');
-
-            $sth->bindValue(':id', $update_id);
-            $sth->bindValue(':chat_id', $chat_id);
-            $sth->bindValue(':message_id', $message_id);
-            $sth->bindValue(':edited_message_id', $edited_message_id);
-            $sth->bindValue(':channel_post_id', $channel_post_id);
-            $sth->bindValue(':edited_channel_post_id', $edited_channel_post_id);
-            $sth->bindValue(':inline_query_id', $inline_query_id);
-            $sth->bindValue(':chosen_inline_result_id', $chosen_inline_result_id);
-            $sth->bindValue(':callback_query_id', $callback_query_id);
-            $sth->bindValue(':shipping_query_id', $shipping_query_id);
-            $sth->bindValue(':pre_checkout_query_id', $pre_checkout_query_id);
-            $sth->bindValue(':poll_id', $poll_id);
-
-            return $sth->execute();
+            $telegram_update = new Update();
+            $telegram_update->id = $update_id;
+            $telegram_update->chat_id = $chat_id;
+            $telegram_update->message_id = $message_id;
+            $telegram_update->edited_message_id = $edited_message_id;
+            $telegram_update->channel_post_id = $channel_post_id;
+            $telegram_update->edited_channel_post_id = $edited_channel_post_id;
+            $telegram_update->inline_query_id = $inline_query_id;
+            $telegram_update->chosen_inline_result_id = $chosen_inline_result_id;
+            $telegram_update->shipping_query_id = $shipping_query_id;
+            $telegram_update->pre_checkout_query_id = $pre_checkout_query_id;
+            $telegram_update->poll_id = $poll_id;
+            $telegram_update->save();
         } catch (PDOException $e) {
             throw new TelegramException($e->getMessage());
         }
@@ -455,20 +358,8 @@ class DB
         }
 
         try {
-            $sth = self::$pdo->prepare('
-                INSERT IGNORE INTO `' . TB_CHAT . '`
-                (`id`, `type`, `title`, `username`, `first_name`, `last_name`, `all_members_are_administrators`, `created_at` ,`updated_at`, `old_id`)
-                VALUES
-                (:id, :type, :title, :username, :first_name, :last_name, :all_members_are_administrators, :created_at, :updated_at, :old_id)
-                ON DUPLICATE KEY UPDATE
-                    `type`                           = VALUES(`type`),
-                    `title`                          = VALUES(`title`),
-                    `username`                       = VALUES(`username`),
-                    `first_name`                     = VALUES(`first_name`),
-                    `last_name`                      = VALUES(`last_name`),
-                    `all_members_are_administrators` = VALUES(`all_members_are_administrators`),
-                    `updated_at`                     = VALUES(`updated_at`)
-            ');
+
+            $chat_entry = new TelegramChat();
 
             $chat_id   = $chat->getId();
             $chat_type = $chat->getType();
@@ -476,15 +367,16 @@ class DB
             if ($migrate_to_chat_id !== null) {
                 $chat_type = 'supergroup';
 
-                $sth->bindValue(':id', $migrate_to_chat_id);
-                $sth->bindValue(':old_id', $chat_id);
+                $chat_entry->id = $migrate_to_chat_id;
+                $chat_entry->old_id = $chat_id;
             } else {
-                $sth->bindValue(':id', $chat_id);
-                $sth->bindValue(':old_id', $migrate_to_chat_id);
+                $chat_entry->id = $chat_id;
+                $chat_entry->old_id = $migrate_to_chat_id;
             }
 
-            $sth->bindValue(':type', $chat_type);
-            $sth->bindValue(':title', $chat->getTitle());
+            $chat_entry->type = $chat_type;
+            $chat_entry->title = $chat->getTitle();
+
             $sth->bindValue(':username', $chat->getUsername());
             $sth->bindValue(':first_name', $chat->getFirstName());
             $sth->bindValue(':last_name', $chat->getLastName());
