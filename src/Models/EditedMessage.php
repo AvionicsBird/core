@@ -53,6 +53,15 @@ class EditedMessage extends BaseTelegramModel
 		];
     }
 
+    public function consume_presave()
+    {
+        $chat = new Chat();
+        $chat->consume(array_merge($this->chat, ['edit_date' => $this->edit_date]));
+        /** TODO - Associate Chat with usr? */
+
+        /** TODO entitiesarraytoJoin.. reverse engineer and make it work right */
+        // $this->entities = self::entitiesArrayToJson($this->entities);
+    }
 
 	public function telegram_update() {
 		return $this->hasMany( Update::class, 'edited_message_id' );

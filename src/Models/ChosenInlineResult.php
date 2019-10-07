@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Models\Base;
+namespace Longman\TelegramBot\Models;
+
+use DateTime;
 
 /**
  * Class BaseChosenInlineResult
@@ -17,22 +19,21 @@ namespace App\Models\Base;
  * @property string inline_message_id
  * @property string query
  * @property datetime created_at
- * @property \App\Models\TelegramUpdate[] telegram_update
+ * @property Update[] telegram_update
  */
-class BaseChosenInlineResult extends \Colorgreen\Generator\Models\BaseModel
+class ChosenInlineResult extends BaseTelegramModel
 {
 
 
-
     protected $attributes = [
-		'id' => null,
-		'result_id' => '',
-		'user_id' => null,
-		'location' => null,
-		'inline_message_id' => null,
-		'query' => null,
-		'created_at' => null
-	];
+        'id' => null,
+        'result_id' => '',
+        'user_id' => null,
+        'location' => null,
+        'inline_message_id' => null,
+        'query' => null,
+        'created_at' => null
+    ];
 
     /**
      * @return array
@@ -40,20 +41,21 @@ class BaseChosenInlineResult extends \Colorgreen\Generator\Models\BaseModel
     public function getRules()
     {
         return [
-			'id' => "nullable|numeric|integer",
-			'result_id' => "required|string|max:255",
-			'user_id' => "nullable|numeric|integer",
-			'location' => "nullable|string|max:255",
-			'inline_message_id' => "nullable|string|max:255",
-			'query' => "required|string",
-			'created_at' => "nullable|date"
-		];
+            'id' => "nullable|numeric|integer",
+            'result_id' => "required|string|max:255",
+            'user_id' => "nullable|numeric|integer",
+            'location' => "nullable|string|max:255",
+            'inline_message_id' => "nullable|string|max:255",
+            'query' => "required|string",
+            'created_at' => "nullable|date"
+        ];
     }
 
 
-	public function telegram_update() {
-		return $this->hasMany( \App\Models\TelegramUpdate::class, 'chosen_inline_result_id' );
-	}
+    public function telegram_update()
+    {
+        return $this->hasMany(Update::class, 'chosen_inline_result_id');
+    }
 
 
     /**

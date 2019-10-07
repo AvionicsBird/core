@@ -170,6 +170,7 @@ class CreateTelegramTables extends Migration
         });
         Schema::create(config('telegram.database.update'), function(Blueprint $table) {
             $table->bigInteger('id')->unsigned()->primary()->comment('Update\'s unique identifier');
+            /*
             $table->bigInteger('chat_id')->nullable()->comment('Unique chat identifier');
             $table->bigInteger('message_id')->unsigned()->nullable()->comment('New incoming message of any kind - text, photo, sticker, etc.');
             $table->bigInteger('edited_message_id')->unsigned()->nullable()->index('edited_message_id')->comment('New version of a message that is known to the bot and was edited');
@@ -183,6 +184,9 @@ class CreateTelegramTables extends Migration
             $table->bigInteger('poll_id')->unsigned()->nullable()->index('poll_id')->comment('New poll state. Bots receive only updates about polls, which are sent or stopped by the bot');
             $table->index(['chat_id','channel_post_id'], 'chat_id');
             $table->index(['chat_id','message_id'], 'message_id');
+            */
+            $table->bigInteger('update_id')->comment('ID on Associated Update Type');
+            $table->string('update_type')->comment('Update Table Type');
             $table->timestamps();
         });
 

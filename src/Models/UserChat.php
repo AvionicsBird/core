@@ -36,6 +36,16 @@ class UserChat extends BaseTelegramModel
 		];
     }
 
+    public function User()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function Chat()
+    {
+        return $this->belongsTo(Chat::class);
+    }
+
     /**
      * All model fields.
      *

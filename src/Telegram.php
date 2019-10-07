@@ -16,10 +16,8 @@ defined('TB_BASE_COMMANDS_PATH') || define('TB_BASE_COMMANDS_PATH', TB_BASE_PATH
 use Exception;
 use Longman\TelegramBot\Commands\Command;
 use Longman\TelegramBot\Entities\ServerResponse;
-use Longman\TelegramBot\Entities\Update;
 use Longman\TelegramBot\Exception\TelegramException;
 use Longman\TelegramBot\Models\Update;
-use PDO;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RegexIterator;
@@ -153,45 +151,6 @@ class Telegram
         $this->addCommandsPath(TB_BASE_COMMANDS_PATH . '/SystemCommands');
 
         Request::initialize($this);
-    }
-
-    /**`
-     * Initialize Database connection
-     *
-     * @param array  $credential
-     * @param string $table_prefix
-     * @param string $encoding
-     *
-     * @return Telegram
-     * @throws TelegramException
-     */
-    public function enableMySql(array $credential, $table_prefix = null, $encoding = 'utf8mb4')
-    {
-        $this->pdo = DB::initialize($credential, $this, $table_prefix, $encoding);
-        ConversationDB::initializeConversation();
-        $this->mysql_enabled = true;
-
-        return $this;
-    }
-
-    /**
-     * Initialize Database external connection
-     *
-     * @param PDO    $external_pdo_connection PDO database object
-     * @param string $table_prefix
-     *
-     * @return Telegram
-     * @throws TelegramException
-     */
-    public function enableExternalMySql($external_pdo_connection, $table_prefix = null)
-    {
-        // This isn't really needed anymore as we're switching to eloquent
-        /*
-        $this->pdo = DB::externalInitialize($external_pdo_connection, $this, $table_prefix);
-        ConversationDB::initializeConversation();
-        $this->mysql_enabled = true;
-        */
-        return $this;
     }
 
     /**
@@ -378,6 +337,8 @@ class Telegram
             throw new TelegramException('Invalid JSON!');
         }
 
+
+        $update = new Update();
 
         if ($response = $this->processUpdate(new Update($post, $this->bot_username))) {
             return $response->isOk();

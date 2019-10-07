@@ -55,7 +55,6 @@ class PreCheckoutQuery extends BaseTelegramModel
 	}
 
 
-
     /**
      * All model fields.
      *

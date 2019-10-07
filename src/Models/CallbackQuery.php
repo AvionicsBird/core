@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property datetime created_at
  * @property Update[] telegram_update
  */
-class CallbackQuery extends Model
+class CallbackQuery extends BaseTelegramModel
 {
 
 
@@ -56,6 +56,20 @@ class CallbackQuery extends Model
 			'game_short_name' => "required|string|max:255",
 			'created_at' => "nullable|date"
 		];
+    }
+
+    protected function consume_presave()
+    {
+        if ($this->message instanceof \Longman\TelegramBot\Entities\Message) {
+            $chat_id = $this->message->getChat()->getId();
+            $message_id = $this->message->getMessageId();
+
+            $existing_message = Message::where('id', $message_id)->where('chat_id', $chat_id)->count();
+
+            $message = $edited_message ? new EditedMessage() : new Message();
+            $message->consume();
+        }
+        return true;
     }
 
 

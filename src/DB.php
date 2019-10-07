@@ -12,6 +12,7 @@
 namespace Longman\TelegramBot;
 use Illuminate\Support\Facades\DB as LaravelDB;
 
+/*
 use Longman\TelegramBot\Entities\CallbackQuery;
 use Longman\TelegramBot\Entities\Chat;
 use Longman\TelegramBot\Entities\ChosenInlineResult;
@@ -21,11 +22,18 @@ use Longman\TelegramBot\Entities\Payments\PreCheckoutQuery;
 use Longman\TelegramBot\Entities\Payments\ShippingQuery;
 use Longman\TelegramBot\Entities\Poll;
 use Longman\TelegramBot\Entities\ReplyToMessage;
-use Longman\TelegramBot\Entities\Update;
+
 use Longman\TelegramBot\Entities\User;
 use Longman\TelegramBot\Exception\TelegramException;
 use Longman\TelegramBot\Models\TelegramChat;
-use Longman\TelegramBot\Models\Update;
+*/
+
+use Longman\TelegramBot\Entities\Update;
+use Longman\TelegramBot\Models\Update as TelegramUpdate;
+use Longman\TelegramBot\Models\ChosenInlineResult;
+use Longman\TelegramBot\Models\InlineQuery;
+use Longman\TelegramBot\Models\Message;
+// use Longman\TelegramBot\Models\Update;
 use PDO;
 use PDOException;
 
@@ -217,63 +225,6 @@ class DB
     }
 
     /**
-     * Insert entry to telegram_update table
-     *
-     * @param string      $update_id
-     * @param string|null $chat_id
-     * @param string|null $message_id
-     * @param string|null $edited_message_id
-     * @param string|null $channel_post_id
-     * @param string|null $edited_channel_post_id
-     * @param string|null $inline_query_id
-     * @param string|null $chosen_inline_result_id
-     * @param string|null $callback_query_id
-     * @param string|null $shipping_query_id
-     * @param string|null $pre_checkout_query_id
-     * @param string|null $poll_id
-     *
-     * @return bool If the insert was successful
-     * @throws TelegramException
-     */
-    protected static function insertTelegramUpdate(
-        $update_id,
-        $chat_id = null,
-        $message_id = null,
-        $edited_message_id = null,
-        $channel_post_id = null,
-        $edited_channel_post_id = null,
-        $inline_query_id = null,
-        $chosen_inline_result_id = null,
-        $callback_query_id = null,
-        $shipping_query_id = null,
-        $pre_checkout_query_id = null,
-        $poll_id = null
-    ) {
-        if ($message_id === null && $edited_message_id === null && $channel_post_id === null && $edited_channel_post_id === null && $inline_query_id === null && $chosen_inline_result_id === null && $callback_query_id === null && $shipping_query_id === null && $pre_checkout_query_id === null && $poll_id === null) {
-            throw new TelegramException('message_id, edited_message_id, channel_post_id, edited_channel_post_id, inline_query_id, chosen_inline_result_id, callback_query_id, shipping_query_id, pre_checkout_query_id, poll_id are all null');
-        }
-
-
-        try {
-            $telegram_update = new Update();
-            $telegram_update->id = $update_id;
-            $telegram_update->chat_id = $chat_id;
-            $telegram_update->message_id = $message_id;
-            $telegram_update->edited_message_id = $edited_message_id;
-            $telegram_update->channel_post_id = $channel_post_id;
-            $telegram_update->edited_channel_post_id = $edited_channel_post_id;
-            $telegram_update->inline_query_id = $inline_query_id;
-            $telegram_update->chosen_inline_result_id = $chosen_inline_result_id;
-            $telegram_update->shipping_query_id = $shipping_query_id;
-            $telegram_update->pre_checkout_query_id = $pre_checkout_query_id;
-            $telegram_update->poll_id = $poll_id;
-            $telegram_update->save();
-        } catch (PDOException $e) {
-            throw new TelegramException($e->getMessage());
-        }
-    }
-
-    /**
      * Insert users and save their connection to chats
      *
      * @param User   $user
@@ -290,19 +241,6 @@ class DB
         }
 
         try {
-            $sth = self::$pdo->prepare('
-                INSERT INTO `' . TB_USER . '`
-                (`id`, `is_bot`, `username`, `first_name`, `last_name`, `language_code`, `created_at`, `updated_at`)
-                VALUES
-                (:id, :is_bot, :username, :first_name, :last_name, :language_code, :created_at, :updated_at)
-                ON DUPLICATE KEY UPDATE
-                    `is_bot`         = VALUES(`is_bot`),
-                    `username`       = VALUES(`username`),
-                    `first_name`     = VALUES(`first_name`),
-                    `last_name`      = VALUES(`last_name`),
-                    `language_code`  = VALUES(`language_code`),
-                    `updated_at`     = VALUES(`updated_at`)
-            ');
 
             $sth->bindValue(':id', $user->getId());
             $sth->bindValue(':is_bot', $user->getIsBot(), PDO::PARAM_INT);
@@ -310,7 +248,8 @@ class DB
             $sth->bindValue(':first_name', $user->getFirstName());
             $sth->bindValue(':last_name', $user->getLastName());
             $sth->bindValue(':language_code', $user->getLanguageCode());
-            $date = $date ?: self::getTimestamp();
+
+
             $sth->bindValue(':created_at', $date);
             $sth->bindValue(':updated_at', $date);
 
@@ -393,358 +332,20 @@ class DB
 
     /**
      * Insert request into database
-     *
-     * @todo self::$pdo->lastInsertId() - unsafe usage if expected previous insert fails?
-     *
      * @param Update $update
      *
-     * @return bool
+     * @return TelegramUpdate
      * @throws TelegramException
      */
     public static function insertRequest(Update $update)
     {
-        if (!self::isDbConnected()) {
-            return false;
-        }
-
-        $chat_id                 = null;
-        $message_id              = null;
-        $edited_message_id       = null;
-        $channel_post_id         = null;
-        $edited_channel_post_id  = null;
-        $inline_query_id         = null;
-        $chosen_inline_result_id = null;
-        $callback_query_id       = null;
-        $shipping_query_id       = null;
-        $pre_checkout_query_id   = null;
-        $poll_id                 = null;
-
-        if (($message = $update->getMessage()) && self::insertMessageRequest($message)) {
-            $chat_id    = $message->getChat()->getId();
-            $message_id = $message->getMessageId();
-        } elseif (($edited_message = $update->getEditedMessage()) && self::insertEditedMessageRequest($edited_message)) {
-            $chat_id           = $edited_message->getChat()->getId();
-            $edited_message_id = self::$pdo->lastInsertId();
-        } elseif (($channel_post = $update->getChannelPost()) && self::insertMessageRequest($channel_post)) {
-            $chat_id         = $channel_post->getChat()->getId();
-            $channel_post_id = $channel_post->getMessageId();
-        } elseif (($edited_channel_post = $update->getEditedChannelPost()) && self::insertEditedMessageRequest($edited_channel_post)) {
-            $chat_id                = $edited_channel_post->getChat()->getId();
-            $edited_channel_post_id = self::$pdo->lastInsertId();
-        } elseif (($inline_query = $update->getInlineQuery()) && self::insertInlineQueryRequest($inline_query)) {
-            $inline_query_id = $inline_query->getId();
-        } elseif (($chosen_inline_result = $update->getChosenInlineResult()) && self::insertChosenInlineResultRequest($chosen_inline_result)) {
-            $chosen_inline_result_id = self::$pdo->lastInsertId();
-        } elseif (($callback_query = $update->getCallbackQuery()) && self::insertCallbackQueryRequest($callback_query)) {
-            $callback_query_id = $callback_query->getId();
-        } elseif (($shipping_query = $update->getShippingQuery()) && self::insertShippingQueryRequest($shipping_query)) {
-            $shipping_query_id = $shipping_query->getId();
-        } elseif (($pre_checkout_query = $update->getPreCheckoutQuery()) && self::insertPreCheckoutQueryRequest($pre_checkout_query)) {
-            $pre_checkout_query_id = $pre_checkout_query->getId();
-        } elseif (($poll = $update->getPoll()) && self::insertPollRequest($poll)) {
-            $poll_id = $poll->getId();
-        } else {
-            return false;
-        }
-
-        return self::insertTelegramUpdate(
-            $update->getUpdateId(),
-            $chat_id,
-            $message_id,
-            $edited_message_id,
-            $channel_post_id,
-            $edited_channel_post_id,
-            $inline_query_id,
-            $chosen_inline_result_id,
-            $callback_query_id,
-            $shipping_query_id,
-            $pre_checkout_query_id,
-            $poll_id
-        );
+        $telegram_update = new TelegramUpdate();
+        $telegram_update->ConsumeUpdate($update);
+        return $telegram_update;
     }
 
-    /**
-     * Insert inline query request into database
-     *
-     * @param InlineQuery $inline_query
-     *
-     * @return bool If the insert was successful
-     * @throws TelegramException
-     */
-    public static function insertInlineQueryRequest(InlineQuery $inline_query)
-    {
-        if (!self::isDbConnected()) {
-            return false;
-        }
 
-        try {
-            $sth = self::$pdo->prepare('
-                INSERT IGNORE INTO `' . TB_INLINE_QUERY . '`
-                (`id`, `user_id`, `location`, `query`, `offset`, `created_at`)
-                VALUES
-                (:id, :user_id, :location, :query, :offset, :created_at)
-            ');
 
-            $date    = self::getTimestamp();
-            $user_id = null;
-
-            $user = $inline_query->getFrom();
-            if ($user instanceof User) {
-                $user_id = $user->getId();
-                self::insertUser($user, $date);
-            }
-
-            $sth->bindValue(':id', $inline_query->getId());
-            $sth->bindValue(':user_id', $user_id);
-            $sth->bindValue(':location', $inline_query->getLocation());
-            $sth->bindValue(':query', $inline_query->getQuery());
-            $sth->bindValue(':offset', $inline_query->getOffset());
-            $sth->bindValue(':created_at', $date);
-
-            return $sth->execute();
-        } catch (PDOException $e) {
-            throw new TelegramException($e->getMessage());
-        }
-    }
-
-    /**
-     * Insert chosen inline result request into database
-     *
-     * @param ChosenInlineResult $chosen_inline_result
-     *
-     * @return bool If the insert was successful
-     * @throws TelegramException
-     */
-    public static function insertChosenInlineResultRequest(ChosenInlineResult $chosen_inline_result)
-    {
-        if (!self::isDbConnected()) {
-            return false;
-        }
-
-        try {
-            $sth = self::$pdo->prepare('
-                INSERT INTO `' . TB_CHOSEN_INLINE_RESULT . '`
-                (`result_id`, `user_id`, `location`, `inline_message_id`, `query`, `created_at`)
-                VALUES
-                (:result_id, :user_id, :location, :inline_message_id, :query, :created_at)
-            ');
-
-            $date    = self::getTimestamp();
-            $user_id = null;
-
-            $user = $chosen_inline_result->getFrom();
-            if ($user instanceof User) {
-                $user_id = $user->getId();
-                self::insertUser($user, $date);
-            }
-
-            $sth->bindValue(':result_id', $chosen_inline_result->getResultId());
-            $sth->bindValue(':user_id', $user_id);
-            $sth->bindValue(':location', $chosen_inline_result->getLocation());
-            $sth->bindValue(':inline_message_id', $chosen_inline_result->getInlineMessageId());
-            $sth->bindValue(':query', $chosen_inline_result->getQuery());
-            $sth->bindValue(':created_at', $date);
-
-            return $sth->execute();
-        } catch (PDOException $e) {
-            throw new TelegramException($e->getMessage());
-        }
-    }
-
-    /**
-     * Insert callback query request into database
-     *
-     * @param CallbackQuery $callback_query
-     *
-     * @return bool If the insert was successful
-     * @throws TelegramException
-     */
-    public static function insertCallbackQueryRequest(CallbackQuery $callback_query)
-    {
-        if (!self::isDbConnected()) {
-            return false;
-        }
-
-        try {
-            $sth = self::$pdo->prepare('
-                INSERT IGNORE INTO `' . TB_CALLBACK_QUERY . '`
-                (`id`, `user_id`, `chat_id`, `message_id`, `inline_message_id`, `chat_instance`, `data`, `game_short_name`, `created_at`)
-                VALUES
-                (:id, :user_id, :chat_id, :message_id, :inline_message_id, :chat_instance, :data, :game_short_name, :created_at)
-            ');
-
-            $date    = self::getTimestamp();
-            $user_id = null;
-
-            $user = $callback_query->getFrom();
-            if ($user instanceof User) {
-                $user_id = $user->getId();
-                self::insertUser($user, $date);
-            }
-
-            $message    = $callback_query->getMessage();
-            $chat_id    = null;
-            $message_id = null;
-            if ($message instanceof Message) {
-                $chat_id    = $message->getChat()->getId();
-                $message_id = $message->getMessageId();
-
-                $is_message = self::$pdo->query('
-                    SELECT *
-                    FROM `' . TB_MESSAGE . '`
-                    WHERE `id` = ' . $message_id . '
-                      AND `chat_id` = ' . $chat_id . '
-                    LIMIT 1
-                ')->rowCount();
-
-                if ($is_message) {
-                    self::insertEditedMessageRequest($message);
-                } else {
-                    self::insertMessageRequest($message);
-                }
-            }
-
-            $sth->bindValue(':id', $callback_query->getId());
-            $sth->bindValue(':user_id', $user_id);
-            $sth->bindValue(':chat_id', $chat_id);
-            $sth->bindValue(':message_id', $message_id);
-            $sth->bindValue(':inline_message_id', $callback_query->getInlineMessageId());
-            $sth->bindValue(':chat_instance', $callback_query->getChatInstance());
-            $sth->bindValue(':data', $callback_query->getData());
-            $sth->bindValue(':game_short_name', $callback_query->getGameShortName());
-            $sth->bindValue(':created_at', $date);
-
-            return $sth->execute();
-        } catch (PDOException $e) {
-            throw new TelegramException($e->getMessage());
-        }
-    }
-
-    /**
-     * Insert shipping query request into database
-     *
-     * @param ShippingQuery $shipping_query
-     *
-     * @return bool If the insert was successful
-     * @throws TelegramException
-     */
-    public static function insertShippingQueryRequest(ShippingQuery $shipping_query)
-    {
-        if (!self::isDbConnected()) {
-            return false;
-        }
-
-        try {
-            $sth = self::$pdo->prepare('
-                INSERT IGNORE INTO `' . TB_SHIPPING_QUERY . '`
-                (`id`, `user_id`, `invoice_payload`, `shipping_address`, `created_at`)
-                VALUES
-                (:id, :user_id, :invoice_payload, :shipping_address, :created_at)
-            ');
-
-            $date    = self::getTimestamp();
-            $user_id = null;
-
-            $user = $shipping_query->getFrom();
-            if ($user instanceof User) {
-                $user_id = $user->getId();
-                self::insertUser($user, $date);
-            }
-
-            $sth->bindValue(':id', $shipping_query->getId());
-            $sth->bindValue(':user_id', $user_id);
-            $sth->bindValue(':invoice_payload', $shipping_query->getInvoicePayload());
-            $sth->bindValue(':shipping_address', $shipping_query->getShippingAddress());
-            $sth->bindValue(':created_at', $date);
-
-            return $sth->execute();
-        } catch (PDOException $e) {
-            throw new TelegramException($e->getMessage());
-        }
-    }
-
-    /**
-     * Insert pre checkout query request into database
-     *
-     * @param PreCheckoutQuery $pre_checkout_query
-     *
-     * @return bool If the insert was successful
-     * @throws TelegramException
-     */
-    public static function insertPreCheckoutQueryRequest(PreCheckoutQuery $pre_checkout_query)
-    {
-        if (!self::isDbConnected()) {
-            return false;
-        }
-
-        try {
-            $sth = self::$pdo->prepare('
-                INSERT IGNORE INTO `' . TB_PRE_CHECKOUT_QUERY . '`
-                (`id`, `user_id`, `currency`, `total_amount`, `invoice_payload`, `shipping_option_id`, `order_info`, `created_at`)
-                VALUES
-                (:id, :user_id, :currency, :total_amount, :invoice_payload, :shipping_option_id, :order_info, :created_at)
-            ');
-
-            $date    = self::getTimestamp();
-            $user_id = null;
-
-            $user = $pre_checkout_query->getFrom();
-            if ($user instanceof User) {
-                $user_id = $user->getId();
-                self::insertUser($user, $date);
-            }
-
-            $sth->bindValue(':id', $pre_checkout_query->getId());
-            $sth->bindValue(':user_id', $user_id);
-            $sth->bindValue(':currency', $pre_checkout_query->getCurrency());
-            $sth->bindValue(':total_amount', $pre_checkout_query->getTotalAmount());
-            $sth->bindValue(':invoice_payload', $pre_checkout_query->getInvoicePayload());
-            $sth->bindValue(':shipping_option_id', $pre_checkout_query->getShippingOptionId());
-            $sth->bindValue(':order_info', $pre_checkout_query->getOrderInfo());
-            $sth->bindValue(':created_at', $date);
-
-            return $sth->execute();
-        } catch (PDOException $e) {
-            throw new TelegramException($e->getMessage());
-        }
-    }
-
-    /**
-     * Insert poll request into database
-     *
-     * @param Poll $poll
-     *
-     * @return bool If the insert was successful
-     * @throws TelegramException
-     */
-    public static function insertPollRequest(Poll $poll)
-    {
-        if (!self::isDbConnected()) {
-            return false;
-        }
-
-        try {
-            $sth = self::$pdo->prepare('
-                INSERT INTO `' . TB_POLL . '`
-                (`id`, `question`, `options`, `is_closed`, `created_at`)
-                VALUES
-                (:id, :question, :options, :is_closed, :created_at)
-                ON DUPLICATE KEY UPDATE
-                    `options`   = VALUES(`options`),
-                    `is_closed` = VALUES(`is_closed`)
-            ');
-
-            $sth->bindValue(':id', $poll->getId());
-            $sth->bindValue(':question', $poll->getQuestion());
-            $sth->bindValue(':options', self::entitiesArrayToJson($poll->getOptions() ?: null));
-            $sth->bindValue(':is_closed', $poll->getIsClosed());
-            $sth->bindValue(':created_at', self::getTimestamp());
-
-            return $sth->execute();
-        } catch (PDOException $e) {
-            throw new TelegramException($e->getMessage());
-        }
-    }
 
     /**
      * Insert Message request in db
@@ -756,9 +357,6 @@ class DB
      */
     public static function insertMessageRequest(Message $message)
     {
-        if (!self::isDbConnected()) {
-            return false;
-        }
 
         $date = self::getTimestamp($message->getDate());
 
@@ -808,28 +406,6 @@ class DB
         }
 
         try {
-            $sth = self::$pdo->prepare('
-                INSERT IGNORE INTO `' . TB_MESSAGE . '`
-                (
-                    `id`, `user_id`, `chat_id`, `date`, `forward_from`, `forward_from_chat`, `forward_from_message_id`,
-                    `forward_signature`, `forward_sender_name`, `forward_date`,
-                    `reply_to_chat`, `reply_to_message`, `edit_date`, `media_group_id`, `author_signature`, `text`, `entities`, `caption_entities`,
-                    `audio`, `document`, `animation`, `game`, `photo`, `sticker`, `video`, `voice`, `video_note`, `caption`, `contact`,
-                    `location`, `venue`, `poll`, `new_chat_members`, `left_chat_member`,
-                    `new_chat_title`, `new_chat_photo`, `delete_chat_photo`, `group_chat_created`,
-                    `supergroup_chat_created`, `channel_chat_created`, `migrate_to_chat_id`, `migrate_from_chat_id`,
-                    `pinned_message`, `invoice`, `successful_payment`, `connected_website`, `passport_data`, `reply_markup`
-                ) VALUES (
-                    :message_id, :user_id, :chat_id, :date, :forward_from, :forward_from_chat, :forward_from_message_id,
-                    :forward_signature, :forward_sender_name, :forward_date,
-                    :reply_to_chat, :reply_to_message, :edit_date, :media_group_id, :author_signature, :text, :entities, :caption_entities,
-                    :audio, :document, :animation, :game, :photo, :sticker, :video, :voice, :video_note, :caption, :contact,
-                    :location, :venue, :poll, :new_chat_members, :left_chat_member,
-                    :new_chat_title, :new_chat_photo, :delete_chat_photo, :group_chat_created,
-                    :supergroup_chat_created, :channel_chat_created, :migrate_to_chat_id, :migrate_from_chat_id,
-                    :pinned_message, :invoice, :successful_payment, :connected_website, :passport_data, :reply_markup
-                )
-            ');
 
             $user_id = null;
             if ($user instanceof User) {
