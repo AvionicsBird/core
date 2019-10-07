@@ -21,6 +21,7 @@ use Longman\TelegramBot\Entities\Venue as EntityVenue;
 use Longman\TelegramBot\Entities\Video as EntityVideo;
 use Longman\TelegramBot\Entities\VideoNote as EntityVideoNote;
 use Longman\TelegramBot\Entities\Voice as EntityVoice;
+use Longman\TelegramBot\Entities\User as UserEntity;
 
 /**
  * Class Message
@@ -160,7 +161,7 @@ class Message extends BaseTelegramModel
             'location' => EntityLocation::class,
             'venue' => EntityVenue::class,
             'poll' => Poll::class,
-            'new_chat_members' => [User::class],
+            'new_chat_members' => [UserEntity::class],
             'left_chat_member' => User::class,
             'new_chat_photo' => [EntityPhotoSize::class],
             'pinned_message' => Message::class,
